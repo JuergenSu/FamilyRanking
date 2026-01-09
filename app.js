@@ -16,6 +16,8 @@ const participantResults = document.querySelector('#participant-results');
 const page = document.querySelector('.page');
 const surveyId = page ? page.dataset.surveyId : '';
 let existingNames = [];
+let draggingRow = null;
+let draggingPointerId = null;
 
 const getCookie = (key) => {
   if (!document.cookie) {
@@ -43,6 +45,18 @@ const applyStoredName = () => {
     nameInput.classList.add('locked');
   }
   return stored;
+};
+
+const applyStoredVote = (storedName, participants) => {
+  if (!storedName || !Array.isArray(participants)) {
+    return false;
+  }
+  const participant = participants.find((entry) => entry.name === storedName);
+  if (!participant || !Array.isArray(participant.order)) {
+    return false;
+  }
+  renderRanking(participant.order);
+  return true;
 };
 
 const getTargetLink = (button) => {
@@ -138,6 +152,12 @@ const renderRanking = (items) => {
     row.className = 'rank-row';
     row.dataset.item = item;
 
+    const handle = document.createElement('button');
+    handle.type = 'button';
+    handle.className = 'drag-handle';
+    handle.setAttribute('aria-label', 'Ziehen zum Umsortieren');
+    handle.textContent = '::';
+
     const label = document.createElement('div');
     label.className = 'rank-label';
     label.textContent = item;
@@ -158,9 +178,10 @@ const renderRanking = (items) => {
     down.addEventListener('click', () => moveItem(index, index + 1));
 
     controls.append(up, down);
-    row.append(label, controls);
+    row.append(handle, label, controls);
     rankList.append(row);
   });
+  setupDragAndDrop();
 };
 
 const getCurrentOrder = () => Array.from(rankList.querySelectorAll('.rank-row')).map((row) => row.dataset.item);
@@ -170,6 +191,67 @@ const moveItem = (from, to) => {
   const item = current.splice(from, 1)[0];
   current.splice(to, 0, item);
   renderRanking(current);
+};
+
+const setupDragAndDrop = () => {
+  if (!rankList) {
+    return;
+  }
+  if (rankList.dataset.dragSetup === 'true') {
+    return;
+  }
+  rankList.dataset.dragSetup = 'true';
+
+  const clearDrag = () => {
+    if (draggingRow) {
+      draggingRow.classList.remove('dragging');
+    }
+    draggingRow = null;
+    draggingPointerId = null;
+  };
+
+  rankList.addEventListener('pointerdown', (event) => {
+    const handle = event.target.closest('.drag-handle');
+    if (!handle) {
+      return;
+    }
+    const row = handle.closest('.rank-row');
+    if (!row) {
+      return;
+    }
+    event.preventDefault();
+    draggingRow = row;
+    draggingPointerId = event.pointerId;
+    row.classList.add('dragging');
+    row.setPointerCapture(draggingPointerId);
+  });
+
+  rankList.addEventListener('pointermove', (event) => {
+    if (!draggingRow || draggingPointerId !== event.pointerId) {
+      return;
+    }
+    event.preventDefault();
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    const targetRow = target ? target.closest('.rank-row') : null;
+    if (targetRow && targetRow !== draggingRow && rankList.contains(targetRow)) {
+      const allRows = Array.from(rankList.querySelectorAll('.rank-row'));
+      const draggingIndex = allRows.indexOf(draggingRow);
+      const targetIndex = allRows.indexOf(targetRow);
+      if (draggingIndex < targetIndex) {
+        rankList.insertBefore(draggingRow, targetRow.nextSibling);
+      } else {
+        rankList.insertBefore(draggingRow, targetRow);
+      }
+    }
+  }, { passive: false });
+
+  rankList.addEventListener('pointerup', () => {
+    clearDrag();
+  });
+
+  rankList.addEventListener('pointercancel', () => {
+    clearDrag();
+  });
 };
 
 const renderResults = (results) => {
@@ -234,7 +316,8 @@ const loadSurvey = async (id) => {
   renderRanking(data.survey.items);
   renderResults(data.results);
   existingNames = data.results.participants.map((participant) => participant.name);
-  applyStoredName();
+  const stored = applyStoredName();
+  applyStoredVote(stored, data.results.participants);
 };
 
 if (createForm) {

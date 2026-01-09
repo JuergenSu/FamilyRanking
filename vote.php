@@ -61,7 +61,7 @@ if ($surveyId !== '') {
           <input type="text" name="name" placeholder="Dein Name">
         </label>
         <div class="rank-list" id="rank-list"></div>
-        <div class="hint">Reihenfolge mit den Pfeilen aendern. Oben bekommt die meisten Punkte.</div>
+        <div class="hint">Reihenfolge mit den Pfeilen oder per Drag & Drop aendern. Oben bekommt die meisten Punkte.</div>
         <div class="actions">
           <button type="submit">Ranking speichern</button>
         </div>
