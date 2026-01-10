@@ -2,6 +2,7 @@
 const createResult = document.querySelector('#create-result');
 const shareLink = document.querySelector('#share-link');
 const shareButton = document.querySelector('#share-button');
+const createNameInput = document.querySelector('#create-form input[name="creator"]');
 const surveyCard = document.querySelector('#survey-card');
 const surveyTitle = document.querySelector('#survey-title');
 const surveyMeta = document.querySelector('#survey-meta');
@@ -37,12 +38,12 @@ const setCookie = (key, value, days) => {
   document.cookie = `${key}=${encodeURIComponent(value)};expires=${date.toUTCString()};path=/;SameSite=Lax`;
 };
 
-const applyStoredName = () => {
+const applyStoredNameToInput = (input) => {
   const stored = getCookie('fr_name');
-  if (stored && nameInput) {
-    nameInput.value = stored;
-    nameInput.readOnly = true;
-    nameInput.classList.add('locked');
+  if (stored && input) {
+    input.value = stored;
+    input.readOnly = true;
+    input.classList.add('locked');
   }
   return stored;
 };
@@ -316,15 +317,20 @@ const loadSurvey = async (id) => {
   renderRanking(data.survey.items);
   renderResults(data.results);
   existingNames = data.results.participants.map((participant) => participant.name);
-  const stored = applyStoredName();
+  const stored = applyStoredNameToInput(nameInput);
   applyStoredVote(stored, data.results.participants);
 };
+
+if (createNameInput) {
+  applyStoredNameToInput(createNameInput);
+}
 
 if (createForm) {
   createForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(createForm);
     const title = formData.get('title').toString();
+    const creator = formData.get('creator').toString().trim();
     const items = formData
       .get('items')
       .toString()
@@ -340,9 +346,19 @@ if (createForm) {
       alert('Bitte maximal 10 Begriffe eingeben.');
       return;
     }
+    if (!creator) {
+      alert('Bitte einen Namen fuer den Ersteller eingeben.');
+      return;
+    }
+
+    const stored = getCookie('fr_name');
+    if (stored && stored !== creator) {
+      alert('Der Name ist in diesem Browser bereits gespeichert.');
+      return;
+    }
 
     try {
-      const data = await apiRequest('create', { title, items: JSON.stringify(items) });
+      const data = await apiRequest('create', { title, creator, items: JSON.stringify(items) });
       const link = buildLink(data.id);
       if (createResult) {
         createResult.hidden = false;
@@ -351,6 +367,10 @@ if (createForm) {
         shareLink.textContent = link;
       }
       updateShareButtonLabel(shareButton);
+      if (!stored) {
+        setCookie('fr_name', creator, 365);
+        applyStoredNameToInput(createNameInput);
+      }
     } catch (err) {
       alert(err.message);
     }
@@ -388,10 +408,10 @@ if (voteForm) {
       surveyMeta.textContent = `${data.survey.items.length} Begriffe · ${data.results.participant_count} Teilnehmer`;
       renderResults(data.results);
       existingNames = data.results.participants.map((participant) => participant.name);
-      if (!stored) {
-        setCookie('fr_name', name, 365);
-        applyStoredName();
-      }
+    if (!stored) {
+      setCookie('fr_name', name, 365);
+      applyStoredNameToInput(nameInput);
+    }
     } catch (err) {
       alert(err.message);
     }

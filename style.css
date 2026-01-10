@@ -317,13 +317,14 @@ button:disabled {
 
 .survey-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   padding: 12px 14px;
   border: 1px solid rgba(45, 30, 47, 0.1);
   border-radius: 12px;
   background: rgba(45, 30, 47, 0.03);
+  position: relative;
 }
 
 .survey-title {
@@ -334,6 +335,8 @@ button:disabled {
 .survey-meta {
   font-size: 0.9rem;
   color: var(--muted);
+  display: grid;
+  gap: 2px;
 }
 
 .survey-item .share-button {
@@ -341,6 +344,31 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.delete-form {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.delete-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(184, 59, 94, 0.35);
+  background: #fff;
+  color: var(--accent-dark);
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.delete-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(184, 59, 94, 0.2);
 }
 
 @media (max-width: 720px) {

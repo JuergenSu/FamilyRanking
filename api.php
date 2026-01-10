@@ -115,8 +115,10 @@ if (!is_dir($baseDir)) {
 
 if ($action === 'create') {
     $title = isset($_POST['title']) ? trim($_POST['title']) : '';
+    $creator = isset($_POST['creator']) ? trim($_POST['creator']) : '';
     $itemsRaw = isset($_POST['items']) ? $_POST['items'] : '[]';
     $items = json_decode($itemsRaw, true);
+    $cookieName = isset($_COOKIE['fr_name']) ? trim($_COOKIE['fr_name']) : '';
 
     if (!is_array($items)) {
         respond(['ok' => false, 'error' => 'Items invalid.'], 400);
@@ -126,6 +128,14 @@ if ($action === 'create') {
 
     if ($title === '') {
         $title = 'Neue Umfrage';
+    }
+
+    if ($creator === '') {
+        respond(['ok' => false, 'error' => 'Bitte einen Ersteller angeben.'], 400);
+    }
+
+    if ($cookieName !== '' && $cookieName !== $creator) {
+        respond(['ok' => false, 'error' => 'Der Name ist in diesem Browser bereits gespeichert.'], 400);
     }
 
     if (count($items) < 1 || count($items) > 10) {
@@ -149,12 +159,21 @@ if ($action === 'create') {
     $survey = [
         'id' => $id,
         'title' => $title,
+        'creator' => $creator,
         'items' => $items,
         'created_at' => gmdate('c'),
         'votes' => []
     ];
 
     save_survey($baseDir, $survey);
+
+    if ($cookieName === '') {
+        setcookie('fr_name', $creator, [
+            'expires' => time() + 31536000,
+            'path' => '/',
+            'samesite' => 'Lax'
+        ]);
+    }
 
     $link = 'vote.php?survey=' . $id;
     respond(['ok' => true, 'id' => $id, 'link' => $link]);
