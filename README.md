@@ -1,21 +1,32 @@
 # Familien Ranking
 
-Familien Ranking ist eine kleine PHP-Webapp, mit der ihr gemeinsam Begriffe sammelt und per Ranking bewertet. Eine Person erstellt eine Umfrage mit bis zu 10 Begriffen, teilt den Link, und alle Teilnehmer sortieren die Begriffe. Das System vergibt automatisch Punkte und zeigt eine Gesamtwertung sowie die Einzelstimmen.
+Familien Ranking is a lightweight PHP web app for collecting items and ranking them together. One person creates a survey with up to 10 items, shares the link, and everyone orders the items. The app assigns points automatically and shows the overall ranking.
+
+## Features
+
+- Login prompt on the index page when no name cookie is present.
+- Create surveys with a title, creator name, up to 10 items, and an optional toggle to show/hide participant details.
+- Shareable voting link for each survey.
+- Drag-and-drop and button controls for ranking items.
+- Overall results plus optional participant detail view (controlled per survey).
+- Creator-only delete with confirmation.
+- Index page shows only surveys created by or voted on by the current user.
+- Data is stored as JSON files in `data/`.
 
 ## Installation
 
-Voraussetzungen:
-- PHP (inkl. JSON-Unterstuetzung)
-- Schreibrechte auf dem Ordner `data`
+Requirements:
+- PHP (with JSON support)
+- Write access to the `data` folder
 
-Schritte:
-1. Ins Projektverzeichnis wechseln.
-2. Lokalen PHP-Server starten:
+Steps:
+1. Change into the project directory.
+2. Start a local PHP server:
    ```bash
    php -S localhost:8000 -t .
    ```
-3. Im Browser oeffnen: `http://localhost:8000`
+3. Open in the browser: `http://localhost:8000`
 
-Hinweise:
-- Umfragen und Stimmen werden als JSON-Dateien in `data/` gespeichert.
-- Es gibt keine Datenbank oder Benutzerverwaltung; das Tool ist fuer kleine, private Runden gedacht.
+Notes:
+- Surveys and votes are stored as JSON files in `data/`.
+- This is a simple, private tool without a full user system or database.

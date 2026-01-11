@@ -74,7 +74,7 @@ if ($surveyId !== '') {
             <h4>Gesamtranking</h4>
             <div id="overall-results"></div>
           </div>
-          <div>
+          <div id="participant-section">
             <h4>Teilnehmer</h4>
             <div id="participant-results"></div>
           </div>

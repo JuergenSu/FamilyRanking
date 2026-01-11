@@ -40,6 +40,11 @@ $creatorName = isset($_COOKIE['fr_name']) ? trim($_COOKIE['fr_name']) : '';
 yogurethe
 milchschokolade"></textarea>
         </label>
+        <label>
+          <input type="checkbox" name="show_details" value="1">
+          Detailergebnisse der Teilnehmer anzeigen
+        </label>
+        <div class="hint" id="item-count">0/10</div>
         <div class="actions">
           <button type="submit">Link erzeugen</button>
         </div>

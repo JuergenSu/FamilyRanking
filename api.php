@@ -116,6 +116,7 @@ if (!is_dir($baseDir)) {
 if ($action === 'create') {
     $title = isset($_POST['title']) ? trim($_POST['title']) : '';
     $creator = isset($_POST['creator']) ? trim($_POST['creator']) : '';
+    $showDetailsRaw = isset($_POST['show_details']) ? trim($_POST['show_details']) : '';
     $itemsRaw = isset($_POST['items']) ? $_POST['items'] : '[]';
     $items = json_decode($itemsRaw, true);
     $cookieName = isset($_COOKIE['fr_name']) ? trim($_COOKIE['fr_name']) : '';
@@ -137,6 +138,8 @@ if ($action === 'create') {
     if ($cookieName !== '' && $cookieName !== $creator) {
         respond(['ok' => false, 'error' => 'Der Name ist in diesem Browser bereits gespeichert.'], 400);
     }
+
+    $showDetails = $showDetailsRaw === '1' || $showDetailsRaw === 'true' || $showDetailsRaw === 'on';
 
     if (count($items) < 1 || count($items) > 10) {
         respond(['ok' => false, 'error' => 'Bitte 1 bis 10 Begriffe angeben.'], 400);
@@ -160,6 +163,7 @@ if ($action === 'create') {
         'id' => $id,
         'title' => $title,
         'creator' => $creator,
+        'show_details' => $showDetails,
         'items' => $items,
         'created_at' => gmdate('c'),
         'votes' => []

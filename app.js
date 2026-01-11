@@ -1,8 +1,10 @@
-﻿const createForm = document.querySelector('#create-form');
+const createForm = document.querySelector('#create-form');
 const createResult = document.querySelector('#create-result');
 const shareLink = document.querySelector('#share-link');
 const shareButton = document.querySelector('#share-button');
 const createNameInput = document.querySelector('#create-form input[name="creator"]');
+const createItemsInput = document.querySelector('#create-form textarea[name="items"]');
+const createItemCount = document.querySelector('#item-count');
 const surveyCard = document.querySelector('#survey-card');
 const surveyTitle = document.querySelector('#survey-title');
 const surveyMeta = document.querySelector('#survey-meta');
@@ -14,11 +16,13 @@ const nameInput = document.querySelector('#vote-form input[name="name"]');
 const resultsBox = document.querySelector('#results');
 const overallResults = document.querySelector('#overall-results');
 const participantResults = document.querySelector('#participant-results');
+const participantSection = document.querySelector('#participant-section');
 const page = document.querySelector('.page');
 const surveyId = page ? page.dataset.surveyId : '';
 let existingNames = [];
 let draggingRow = null;
 let draggingPointerId = null;
+let showParticipantDetails = true;
 
 const getCookie = (key) => {
   if (!document.cookie) {
@@ -168,13 +172,13 @@ const renderRanking = (items) => {
 
     const up = document.createElement('button');
     up.type = 'button';
-    up.textContent = '▲';
+    up.textContent = '?';
     up.disabled = index === 0;
     up.addEventListener('click', () => moveItem(index, index - 1));
 
     const down = document.createElement('button');
     down.type = 'button';
-    down.textContent = '▼';
+    down.textContent = '?';
     down.disabled = index === items.length - 1;
     down.addEventListener('click', () => moveItem(index, index + 1));
 
@@ -262,6 +266,9 @@ const renderResults = (results) => {
   resultsBox.hidden = false;
   overallResults.innerHTML = '';
   participantResults.innerHTML = '';
+  if (participantSection) {
+    participantSection.hidden = !showParticipantDetails;
+  }
 
   const overallList = document.createElement('ol');
   overallList.className = 'result-list';
@@ -277,6 +284,10 @@ const renderResults = (results) => {
     overallList.append(li);
   });
   overallResults.append(overallList);
+
+  if (!showParticipantDetails) {
+    return;
+  }
 
   if (results.participants.length === 0) {
     participantResults.innerHTML = '<div class="empty">Noch keine Rankings gespeichert.</div>';
@@ -310,11 +321,12 @@ const loadSurvey = async (id) => {
     surveyCard.hidden = false;
   }
   surveyTitle.textContent = data.survey.title;
-  surveyMeta.textContent = `${data.survey.items.length} Begriffe · ${data.results.participant_count} Teilnehmer`;
+  surveyMeta.textContent = `${data.survey.items.length} Begriffe � ${data.results.participant_count} Teilnehmer`;
   const link = buildLink(data.survey.id);
   surveyLink.textContent = link;
   updateShareButtonLabel(surveyShareButton);
   renderRanking(data.survey.items);
+  showParticipantDetails = !!data.survey.show_details;
   renderResults(data.results);
   existingNames = data.results.participants.map((participant) => participant.name);
   const stored = applyStoredNameToInput(nameInput);
@@ -325,12 +337,37 @@ if (createNameInput) {
   applyStoredNameToInput(createNameInput);
 }
 
+const countCreateItems = (value) => value
+  .split('\n')
+  .map((entry) => entry.trim())
+  .filter((entry) => entry.length > 0)
+  .length;
+
+const updateCreateItemCount = () => {
+  if (!createItemsInput || !createItemCount) {
+    return;
+  }
+  const count = countCreateItems(createItemsInput.value);
+  createItemCount.textContent = `${count}/10`;
+};
+
+if (createItemsInput) {
+  updateCreateItemCount();
+  createItemsInput.addEventListener('input', updateCreateItemCount);
+}
+
 if (createForm) {
   createForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(createForm);
     const title = formData.get('title').toString();
-    const creator = formData.get('creator').toString().trim();
+    const creatorFromForm = formData.get('creator');
+    let creator = creatorFromForm ? creatorFromForm.toString() : '';
+    if (!creator && createNameInput) {
+      creator = createNameInput.value;
+    }
+    creator = creator.trim();
+    const showDetails = formData.get('show_details') ? '1' : '0';
     const items = formData
       .get('items')
       .toString()
@@ -346,19 +383,13 @@ if (createForm) {
       alert('Bitte maximal 10 Begriffe eingeben.');
       return;
     }
-    if (!creator) {
-      alert('Bitte einen Namen fuer den Ersteller eingeben.');
-      return;
-    }
-
-    const stored = getCookie('fr_name');
-    if (stored && stored !== creator) {
-      alert('Der Name ist in diesem Browser bereits gespeichert.');
-      return;
-    }
-
     try {
-      const data = await apiRequest('create', { title, creator, items: JSON.stringify(items) });
+      const data = await apiRequest('create', {
+        title,
+        creator,
+        show_details: showDetails,
+        items: JSON.stringify(items)
+      });
       const link = buildLink(data.id);
       if (createResult) {
         createResult.hidden = false;
@@ -367,7 +398,8 @@ if (createForm) {
         shareLink.textContent = link;
       }
       updateShareButtonLabel(shareButton);
-      if (!stored) {
+      const stored = getCookie('fr_name');
+      if (!stored && creator) {
         setCookie('fr_name', creator, 365);
         applyStoredNameToInput(createNameInput);
       }
@@ -405,12 +437,13 @@ if (voteForm) {
         name,
         order: JSON.stringify(order)
       });
-      surveyMeta.textContent = `${data.survey.items.length} Begriffe · ${data.results.participant_count} Teilnehmer`;
+      surveyMeta.textContent = `${data.survey.items.length} Begriffe � ${data.results.participant_count} Teilnehmer`;
+      showParticipantDetails = !!data.survey.show_details;
       renderResults(data.results);
       existingNames = data.results.participants.map((participant) => participant.name);
-    if (!stored) {
-      setCookie('fr_name', name, 365);
-      applyStoredNameToInput(nameInput);
+      if (!stored) {
+        setCookie('fr_name', name, 365);
+        applyStoredNameToInput(nameInput);
     }
     } catch (err) {
       alert(err.message);
@@ -426,3 +459,7 @@ if (surveyId) {
     alert(err.message);
   });
 }
+
+
+
+
